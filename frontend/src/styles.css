@@ -1,0 +1,174 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0f0f1a;
+  color: #e8e8e8;
+  font-family: 'Press Start 2P', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  image-rendering: pixelated;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  background: #0f0f1a;
+  position: relative;
+}
+
+/* Pixel border utility */
+.pixel-border {
+  border: 4px solid #e8e8e8;
+  box-shadow:
+    inset -4px -4px 0 0 #888,
+    inset 4px 4px 0 0 #fff,
+    0 0 0 4px #0f0f1a;
+}
+
+.pixel-border-gold {
+  border: 4px solid #f0a030;
+  box-shadow:
+    inset -4px -4px 0 0 #a06010,
+    inset 4px 4px 0 0 #f8d060;
+}
+
+/* Fade animations */
+.fade-in {
+  animation: fadeIn 0.4s steps(8);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slow-fade-out {
+  animation: slowFadeOut 0.8s steps(8) forwards;
+}
+
+@keyframes slowFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.slow-fade-in {
+  animation: fadeIn 0.6s steps(8);
+}
+
+/* Battle slide animations */
+@keyframes slideInLeft {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(120%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes battleFlash {
+  0%, 100% { background: transparent; }
+  50% { background: #fff; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes victoryBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes hpDrain {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Glow pulse for winner */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Form container */
+.form-container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+
+/* Error message */
+.error-msg {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #2a0808;
+  border: 3px solid #e04040;
+  color: #f08080;
+  font-size: 8px;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* Chart view */
+.chart-view {
+  padding: 20px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chart-title {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.gold { color: #f0a030; }
+.blue { color: #4a9eff; }
+.vs-small {
+  font-size: 10px;
+  color: #888;
+}
+
+/* Scanline overlay */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0f0f1a; }
+::-webkit-scrollbar-thumb { background: #333; }
