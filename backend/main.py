@@ -10,6 +10,8 @@ import math
 
 from stock_data import get_stock_prices
 from pokemon_data import get_charizard_prices, EARLIEST_DATE
+from inflation import adjust_for_inflation
+from montecarlo import run_monte_carlo
 
 app = FastAPI(title="Pokemon vs Stocks Backtester")
 
@@ -161,6 +163,20 @@ def backtest(
     all_finals = {k: v["final_value"] for k, v in assets.items()}
     winner = max(all_finals, key=all_finals.get)
 
+    inflation_series = adjust_for_inflation(series)
+    inflation_final = inflation_series[-1]
+    inflation_assets = {}
+    for key, asset in assets.items():
+        col = "charizard" if key == "charizard" else key
+        inf_final = inflation_final[col]
+        inflation_assets[key] = {
+            "final_value": inf_final,
+            "return_pct": round((inf_final - total_invested) / total_invested * 100, 2),
+        }
+
+    mc_keys = ["charizard"] + ticker_list
+    monte_carlo = run_monte_carlo(series, mc_keys)
+
     return {
         "tickers": ticker_list,
         "amount": amount,
@@ -171,6 +187,9 @@ def backtest(
         "series": series,
         "assets": assets,
         "winner": winner,
+        "inflation_series": inflation_series,
+        "inflation_assets": inflation_assets,
+        "monte_carlo": monte_carlo,
     }
 
 

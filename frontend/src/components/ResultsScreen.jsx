@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { CharizardWin, CharizardLoss } from './CharizardSvg'
+import MonteCarloChart from './MonteCarloChart'
 import { sfxVictory, sfxDefeat } from '../sounds'
 
 const STOCK_COLORS = ['#4a9eff', '#a855f7', '#34d399']
@@ -30,8 +31,9 @@ const metricStyles = {
   value: { fontSize: '7px', color: '#ccc', fontFamily: "'Press Start 2P', monospace" },
 }
 
-function AssetCard({ asset, color, isWinner, index }) {
+function AssetCard({ asset, color, isWinner, index, inflationData }) {
   const m = asset.metrics
+  const showInflation = inflationData != null
   return (
     <div style={{
       ...cardStyles.card,
@@ -41,11 +43,21 @@ function AssetCard({ asset, color, isWinner, index }) {
       <div style={{ ...cardStyles.dot, background: color }} />
       <div style={cardStyles.name}>{asset.label}</div>
       <div style={cardStyles.value}>{formatMoney(asset.final_value)}</div>
+      {showInflation && (
+        <div style={cardStyles.inflationVal}>
+          {formatMoney(inflationData.final_value)} real
+        </div>
+      )}
       <div style={{
         ...cardStyles.returnPct,
         color: asset.return_pct >= 0 ? '#50c878' : '#e04040',
       }}>
         {asset.return_pct >= 0 ? '+' : ''}{asset.return_pct.toFixed(1)}%
+        {showInflation && (
+          <span style={{ color: '#888', fontSize: '7px' }}>
+            {' '}({inflationData.return_pct >= 0 ? '+' : ''}{inflationData.return_pct.toFixed(1)}% real)
+          </span>
+        )}
       </div>
       <div style={cardStyles.metrics}>
         <MetricRow label="SHARPE" value={m.sharpe} />
@@ -82,6 +94,12 @@ const cardStyles = {
     color: '#e8e8e8',
     fontFamily: "'Press Start 2P', monospace",
   },
+  inflationVal: {
+    fontSize: '7px',
+    color: '#a080d0',
+    fontFamily: "'Press Start 2P', monospace",
+    marginTop: '2px',
+  },
   returnPct: {
     fontSize: '9px',
     fontFamily: "'Press Start 2P', monospace",
@@ -95,10 +113,11 @@ const cardStyles = {
 }
 
 export default function ResultsScreen({ result, onReplay, onReset }) {
-  const cardRef = useRef(null)
-  const { assets, winner, tickers, amount, total_invested, dca } = result
+  const { assets, winner, tickers, amount, total_invested, dca, inflation_assets, monte_carlo } = result
   const charizardWins = winner === 'charizard'
   const [showContent, setShowContent] = useState(false)
+  const [showInflation, setShowInflation] = useState(false)
+  const [showMonteCarlo, setShowMonteCarlo] = useState(false)
 
   useEffect(() => {
     if (charizardWins) sfxVictory()
@@ -107,27 +126,9 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
     return () => clearTimeout(t)
   }, [])
 
-  const handleShare = async () => {
-    try {
-      const el = cardRef.current
-      if (!el) return
-      const { default: html2canvas } = await import('html2canvas')
-      const canvas = await html2canvas(el, { backgroundColor: '#0f0f1a', scale: 2 })
-      canvas.toBlob((blob) => {
-        if (!blob) return
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `charizard-vs-${tickers.join('-')}.png`
-        a.click()
-        URL.revokeObjectURL(url)
-      })
-    } catch {}
-  }
-
   return (
     <div style={styles.container}>
-      <div style={styles.content} ref={cardRef}>
+      <div style={styles.content}>
         {/* Victory / defeat banner */}
         <div style={styles.victoryBox}>
           {charizardWins ? (
@@ -162,12 +163,37 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
               {dca > 0 ? ` = ${formatMoney(total_invested)} total` : ''}
             </div>
 
+            {/* Toggle buttons */}
+            <div style={styles.toggleRow}>
+              <button
+                onClick={() => setShowInflation(!showInflation)}
+                style={{
+                  ...styles.toggleBtn,
+                  borderColor: showInflation ? '#a080d0' : '#444',
+                  color: showInflation ? '#a080d0' : '#666',
+                }}
+              >
+                {showInflation ? '◆' : '◇'} INFLATION ADJ
+              </button>
+              <button
+                onClick={() => setShowMonteCarlo(!showMonteCarlo)}
+                style={{
+                  ...styles.toggleBtn,
+                  borderColor: showMonteCarlo ? '#f0a030' : '#444',
+                  color: showMonteCarlo ? '#f0a030' : '#666',
+                }}
+              >
+                {showMonteCarlo ? '◆' : '◇'} MONTE CARLO
+              </button>
+            </div>
+
             <div style={styles.cards}>
               <AssetCard
                 asset={assets.charizard}
                 color="#f0a030"
                 isWinner={winner === 'charizard'}
                 index={0}
+                inflationData={showInflation ? inflation_assets?.charizard : null}
               />
               {tickers.map((t, i) => (
                 <AssetCard
@@ -176,13 +202,22 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
                   color={STOCK_COLORS[i]}
                   isWinner={winner === t}
                   index={i + 1}
+                  inflationData={showInflation ? inflation_assets?.[t] : null}
                 />
               ))}
             </div>
 
+            {showMonteCarlo && monte_carlo && (
+              <div style={{ animation: 'fadeIn 0.3s steps(4)' }}>
+                <MonteCarloChart
+                  monteCarlo={monte_carlo}
+                  tickers={tickers}
+                />
+              </div>
+            )}
+
             <div style={styles.buttons}>
               <button onClick={onReplay} style={styles.btn}>REPLAY</button>
-              <button onClick={handleShare} style={styles.btn}>SAVE</button>
               <button onClick={onReset} style={{ ...styles.btn, borderColor: '#f0a030', color: '#f0a030' }}>
                 NEW BATTLE
               </button>
@@ -233,7 +268,22 @@ const styles = {
     fontFamily: "'Press Start 2P', monospace",
     color: '#666',
     textAlign: 'center',
+    marginBottom: '8px',
+  },
+  toggleRow: {
+    display: 'flex',
+    gap: '8px',
+    justifyContent: 'center',
     marginBottom: '12px',
+  },
+  toggleBtn: {
+    background: '#0a0a14',
+    border: '2px solid',
+    fontSize: '7px',
+    fontFamily: "'Press Start 2P', monospace",
+    padding: '6px 10px',
+    cursor: 'pointer',
+    transition: 'all 0.1s',
   },
   cards: {
     display: 'flex',
