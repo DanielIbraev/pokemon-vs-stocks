@@ -19,31 +19,111 @@ function StockSprite({ color, size = 50 }) {
   )
 }
 
+function HitSparks({ x, y }) {
+  return (
+    <div style={{
+      position: 'absolute',
+      left: x, top: y,
+      animation: 'fadeIn 0.1s steps(1)',
+    }}>
+      <svg viewBox="0 0 60 60" style={{ width: 60, height: 60, imageRendering: 'pixelated' }}>
+        {/* Pixel explosion */}
+        <rect x="28" y="10" width="4" height="8" fill="#f8e848" />
+        <rect x="28" y="42" width="4" height="8" fill="#f8e848" />
+        <rect x="10" y="28" width="8" height="4" fill="#f8e848" />
+        <rect x="42" y="28" width="8" height="4" fill="#f8e848" />
+        <rect x="14" y="14" width="6" height="6" fill="#f0a030" />
+        <rect x="40" y="14" width="6" height="6" fill="#f0a030" />
+        <rect x="14" y="40" width="6" height="6" fill="#f0a030" />
+        <rect x="40" y="40" width="6" height="6" fill="#f0a030" />
+        <rect x="26" y="26" width="8" height="8" fill="#fff" />
+      </svg>
+    </div>
+  )
+}
+
 export default function BattleIntro({ tickers, onDone }) {
   const [step, setStep] = useState(0)
+  const [shake, setShake] = useState(false)
+  const [hitFlash, setHitFlash] = useState(false)
+  const [charizardAttacking, setCharizardAttacking] = useState(false)
+  const [opponentHit, setOpponentHit] = useState(false)
+  const [showSparks, setShowSparks] = useState(false)
+  const [opponentHp, setOpponentHp] = useState(100)
 
   useEffect(() => {
     const timers = [
+      // "Wild X appeared!"
       setTimeout(() => { setStep(1); sfxAppear() }, 400),
-      setTimeout(() => { setStep(2); sfxAppear() }, 1200),
-      setTimeout(() => { setStep(3); sfxAttack() }, 2200),
-      setTimeout(() => setStep(4), 3000),
-      setTimeout(() => onDone(), 3800),
+      // "Go! CHARIZARD!" - charizard slides in
+      setTimeout(() => { setStep(2); sfxAppear() }, 1400),
+      // "CHARIZARD used BACKTEST!" - attack animation
+      setTimeout(() => {
+        setStep(3)
+        setCharizardAttacking(true)
+        sfxAttack()
+      }, 2400),
+      // Charizard lunges forward
+      setTimeout(() => {
+        setCharizardAttacking(false)
+        setHitFlash(true)
+        setShake(true)
+        setShowSparks(true)
+        setOpponentHit(true)
+        sfxAttack()
+      }, 2900),
+      // Clear flash
+      setTimeout(() => {
+        setHitFlash(false)
+        setShake(false)
+      }, 3100),
+      // Clear sparks, opponent flickers
+      setTimeout(() => {
+        setShowSparks(false)
+      }, 3300),
+      // HP drains
+      setTimeout(() => {
+        setOpponentHit(false)
+        setOpponentHp(20)
+      }, 3500),
+      // "It's super effective!"
+      setTimeout(() => {
+        setStep(4)
+        sfxAttack()
+      }, 3800),
+      // Second hit
+      setTimeout(() => {
+        setHitFlash(true)
+        setShake(true)
+        setShowSparks(true)
+        sfxAttack()
+      }, 4200),
+      setTimeout(() => {
+        setHitFlash(false)
+        setShake(false)
+        setShowSparks(false)
+        setOpponentHp(0)
+      }, 4500),
+      // Done
+      setTimeout(() => onDone(), 5200),
     ]
     return () => timers.forEach(clearTimeout)
   }, [onDone])
 
   return (
-    <div style={styles.container}>
-      {/* Flash effect */}
-      {step === 1 && <div style={styles.flash} />}
+    <div style={{
+      ...styles.container,
+      animation: shake ? 'screenShake 0.15s steps(2) infinite' : 'none',
+    }}>
+      {/* White flash */}
+      {hitFlash && <div style={styles.flash} />}
 
       {/* Battle scene */}
       <div style={styles.battleScene}>
         {/* Top section - opponent */}
         <div style={styles.opponentSide}>
-          {step >= 2 && (
-            <div style={{ animation: 'slideInRight 0.5s steps(6)' }}>
+          {step >= 1 && (
+            <div style={{ animation: 'slideInRight 0.4s steps(6)' }}>
               <div style={styles.opponentInfo}>
                 {tickers.map((t, i) => (
                   <div key={t} style={{ ...styles.nameTag, borderColor: STOCK_COLORS[i] }}>
@@ -53,14 +133,24 @@ export default function BattleIntro({ tickers, onDone }) {
                 <div style={styles.hpBar}>
                   <div style={styles.hpLabel}>HP</div>
                   <div style={styles.hpTrack}>
-                    <div style={styles.hpFill} />
+                    <div style={{
+                      ...styles.hpFill,
+                      width: `${opponentHp}%`,
+                      background: opponentHp > 50 ? '#50c878' : opponentHp > 20 ? '#f0c030' : '#e04040',
+                      transition: 'width 0.5s steps(10), background 0.3s',
+                    }} />
                   </div>
                 </div>
               </div>
-              <div style={styles.opponentSprites}>
+              <div style={{
+                ...styles.opponentSprites,
+                opacity: opponentHit ? 0.3 : 1,
+                transition: 'opacity 0.1s steps(1)',
+              }}>
                 {tickers.map((t, i) => (
                   <StockSprite key={t} color={STOCK_COLORS[i]} size={45} />
                 ))}
+                {showSparks && <HitSparks x="20%" y="10%" />}
               </div>
             </div>
           )}
@@ -72,17 +162,23 @@ export default function BattleIntro({ tickers, onDone }) {
         {/* Bottom section - Charizard */}
         <div style={styles.playerSide}>
           {step >= 2 && (
-            <div style={{ animation: 'slideInLeft 0.5s steps(6)' }}>
+            <div style={{
+              animation: 'slideInLeft 0.4s steps(6)',
+              transform: charizardAttacking ? 'translateX(80px) translateY(-30px)' : 'none',
+              transition: 'transform 0.2s steps(3)',
+            }}>
               <CharizardIcon size={100} />
-              <div style={styles.playerInfo}>
-                <div style={{ ...styles.nameTag, borderColor: '#f0a030' }}>
-                  CHARIZARD
-                </div>
-                <div style={styles.hpBar}>
-                  <div style={styles.hpLabel}>HP</div>
-                  <div style={styles.hpTrack}>
-                    <div style={{ ...styles.hpFill, background: '#50c878' }} />
-                  </div>
+            </div>
+          )}
+          {step >= 2 && (
+            <div style={styles.playerInfo}>
+              <div style={{ ...styles.nameTag, borderColor: '#f0a030' }}>
+                CHARIZARD
+              </div>
+              <div style={styles.hpBar}>
+                <div style={styles.hpLabel}>HP</div>
+                <div style={styles.hpTrack}>
+                  <div style={{ ...styles.hpFill, background: '#50c878' }} />
                 </div>
               </div>
             </div>
@@ -92,11 +188,16 @@ export default function BattleIntro({ tickers, onDone }) {
 
       {/* Text box */}
       <div style={styles.textBox}>
-        {step === 0 && <span style={styles.text}>. . .</span>}
-        {step === 1 && <span style={styles.text}>Wild {tickers.join(', ')} appeared!</span>}
-        {step === 2 && <span style={styles.text}>Go! CHARIZARD!</span>}
-        {step === 3 && <span style={styles.text}>CHARIZARD used BACKTEST!</span>}
-        {step >= 4 && <span style={styles.text}>It's super effective!</span>}
+        <span style={styles.text}>
+          {step === 0 && '. . .'}
+          {step === 1 && `Wild ${tickers.join(', ')} appeared!`}
+          {step === 2 && 'Go! CHARIZARD!'}
+          {step === 3 && 'CHARIZARD used BACKTEST!'}
+          {step >= 4 && "It's super effective!"}
+        </span>
+        {step >= 3 && (
+          <span style={styles.textCursor}>▼</span>
+        )}
       </div>
     </div>
   )
@@ -117,7 +218,7 @@ const styles = {
     inset: 0,
     background: '#fff',
     zIndex: 50,
-    animation: 'battleFlash 0.3s steps(2) forwards',
+    animation: 'battleFlash 0.15s steps(2) forwards',
   },
   battleScene: {
     background: '#1a1a2e',
@@ -130,6 +231,7 @@ const styles = {
     flexDirection: 'column',
     justifyContent: 'space-between',
     boxShadow: 'inset -4px -4px 0 0 #888, inset 4px 4px 0 0 #fff',
+    overflow: 'hidden',
   },
   opponentSide: {
     display: 'flex',
@@ -143,6 +245,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: '4px',
+    position: 'relative',
   },
   groundLine: {
     height: '2px',
@@ -200,6 +303,7 @@ const styles = {
     minHeight: '60px',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     boxShadow: 'inset -4px -4px 0 0 #888, inset 4px 4px 0 0 #fff',
   },
   text: {
@@ -207,5 +311,11 @@ const styles = {
     fontFamily: "'Press Start 2P', monospace",
     color: '#e8e8e8',
     lineHeight: '1.6',
+  },
+  textCursor: {
+    fontSize: '10px',
+    fontFamily: "'Press Start 2P', monospace",
+    color: '#e8e8e8',
+    animation: 'blink 0.6s steps(1) infinite',
   },
 }

@@ -84,10 +84,14 @@ def backtest(
         raise HTTPException(400, "Start date must be before end date")
 
     stock_dfs = {}
+    warnings = []
     for ticker in ticker_list:
         df = get_stock_prices(ticker, start, end)
         if df is None or df.empty:
             raise HTTPException(404, f"No price data found for '{ticker}'. Check the ticker symbol or try a different date range.")
+        actual_start = df["date"].min()
+        if actual_start > start_dt:
+            warnings.append(f"{ticker} data starts from {actual_start.strftime('%Y-%m-%d')}")
         stock_dfs[ticker] = df
 
     charizard_df = get_charizard_prices(start, end)
@@ -200,6 +204,7 @@ def backtest(
         "inflation_series": inflation_series,
         "inflation_assets": inflation_assets,
         "monte_carlo": monte_carlo,
+        "warnings": warnings,
     }
 
 

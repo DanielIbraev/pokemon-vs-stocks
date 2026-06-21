@@ -168,6 +168,15 @@ body {
   );
 }
 
+/* Screen shake */
+@keyframes screenShake {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-4px, 2px); }
+  50% { transform: translate(4px, -2px); }
+  75% { transform: translate(-2px, -4px); }
+  100% { transform: translate(2px, 4px); }
+}
+
 /* Pixel transition */
 @keyframes pixelIn {
   from { transform: scale(0); }

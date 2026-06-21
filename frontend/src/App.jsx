@@ -126,6 +126,16 @@ export default function App() {
                 DCA: ${result.dca}/MO
               </p>
             )}
+            {result.warnings && result.warnings.length > 0 && (
+              <div style={{
+                textAlign: 'center', margin: '0 auto 12px', maxWidth: '500px',
+                padding: '8px 12px', background: '#1a1a10', border: '2px solid #f0a030',
+                fontSize: '7px', color: '#f0a030', fontFamily: "'Press Start 2P', monospace",
+                lineHeight: '1.8',
+              }}>
+                {result.warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
+              </div>
+            )}
             <AnimatedChart
               key={result.tickers.join(',') + result.start}
               data={result.series}
