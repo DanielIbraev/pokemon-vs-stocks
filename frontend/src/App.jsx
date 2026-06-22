@@ -7,6 +7,7 @@ import ResultsScreen from './components/ResultsScreen'
 import PixelTransition from './components/PixelTransition'
 import Watermark from './components/Watermark'
 import { runBacktest } from './api'
+import { getPokemonColor } from './components/CharizardSvg'
 import { sfxSelect, sfxBattleStart, sfxVictory, sfxDefeat, startBgm, stopBgm } from './sounds'
 import './styles.css'
 
@@ -103,6 +104,8 @@ export default function App() {
       {phase === 'battle-intro' && result && (
         <BattleIntro
           tickers={result.tickers}
+          pokemon={result.pokemon}
+          pokemonName={result.pokemon_name}
           onDone={handleBattleIntroDone}
         />
       )}
@@ -111,7 +114,7 @@ export default function App() {
         <div className="fade-in">
           <div className="chart-view">
             <h2 className="chart-title">
-              <span className="gold">CHARIZARD</span>
+              <span style={{ color: getPokemonColor(result.pokemon) }}>{result.pokemon_name.toUpperCase()}</span>
               <span className="vs-small">VS</span>
               {result.tickers.map((t, i) => (
                 <span key={t}>
@@ -139,9 +142,11 @@ export default function App() {
               </div>
             )}
             <AnimatedChart
-              key={result.tickers.join(',') + result.start}
+              key={result.tickers.join(',') + result.start + result.pokemon}
               data={result.series}
               tickers={result.tickers}
+              pokemonName={result.pokemon_name}
+              pokemonColor={getPokemonColor(result.pokemon)}
               onAnimationEnd={handleAnimationEnd}
             />
           </div>

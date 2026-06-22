@@ -3,13 +3,14 @@ import {
 } from 'recharts'
 
 const STOCK_COLORS = ['#4a9eff', '#a855f7', '#34d399']
-const CHARIZARD_COLOR = '#f0a030'
+import { getPokemonColor } from './CharizardSvg'
 
-export default function MonteCarloChart({ monteCarlo, tickers }) {
+export default function MonteCarloChart({ monteCarlo, tickers, pokemon }) {
   if (!monteCarlo) return null
 
   const { dates, percentiles } = monteCarlo
-  const allKeys = ['charizard', ...tickers]
+  const allKeys = ['pokemon', ...tickers]
+  const pokemonColor = getPokemonColor(pokemon)
 
   const data = dates.map((date, i) => {
     const point = { date }
@@ -33,7 +34,7 @@ export default function MonteCarloChart({ monteCarlo, tickers }) {
   const formatDate = (dateStr) => new Date(dateStr).getFullYear().toString()
 
   const getColor = (key) => {
-    if (key === 'charizard') return CHARIZARD_COLOR
+    if (key === 'pokemon') return pokemonColor
     const idx = tickers.indexOf(key)
     return STOCK_COLORS[idx] || '#888'
   }

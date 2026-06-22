@@ -9,7 +9,7 @@ import numpy as np
 import math
 
 from stock_data import get_stock_prices
-from pokemon_data import get_charizard_prices, EARLIEST_DATE
+from pokemon_data import get_pokemon_prices, EARLIEST_DATE, AVAILABLE_POKEMON, POKEMON_CARDS
 from inflation import adjust_for_inflation
 from montecarlo import run_monte_carlo
 
@@ -61,6 +61,11 @@ def calc_metrics(values):
     }
 
 
+@app.get("/api/pokemon")
+def list_pokemon():
+    return {"pokemon": {k: v["name"] for k, v in POKEMON_CARDS.items()}}
+
+
 @app.get("/api/backtest")
 def backtest(
     tickers: str = Query(..., description="Comma-separated ticker symbols"),
@@ -68,7 +73,13 @@ def backtest(
     start: str = Query(..., description="Start date YYYY-MM-DD"),
     end: str = Query(..., description="End date YYYY-MM-DD"),
     dca: Optional[float] = Query(None, ge=0, description="Monthly DCA amount (0 or null for lump sum)"),
+    pokemon: str = Query("charizard", description="Pokemon card ID"),
 ):
+    if pokemon not in POKEMON_CARDS:
+        raise HTTPException(400, f"Unknown pokemon '{pokemon}'. Available: {list(POKEMON_CARDS.keys())}")
+
+    pokemon_name = POKEMON_CARDS[pokemon]["name"]
+
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
         raise HTTPException(400, "At least one ticker is required")
@@ -79,7 +90,7 @@ def backtest(
     end_dt = pd.Timestamp(end)
 
     if start_dt < pd.Timestamp(EARLIEST_DATE):
-        raise HTTPException(400, f"Start date cannot be before {EARLIEST_DATE} (Charizard release)")
+        raise HTTPException(400, f"Start date cannot be before {EARLIEST_DATE}")
     if start_dt >= end_dt:
         raise HTTPException(400, "Start date must be before end date")
 
@@ -94,7 +105,9 @@ def backtest(
             warnings.append(f"{ticker} data starts from {actual_start.strftime('%Y-%m-%d')}")
         stock_dfs[ticker] = df
 
-    charizard_df = get_charizard_prices(start, end)
+    pokemon_df = get_pokemon_prices(pokemon, start, end)
+    if pokemon_df is None or pokemon_df.empty:
+        raise HTTPException(400, "No pokemon card data for this date range")
 
     # Normalize all date columns to the same dtype to avoid merge errors
     def normalize_dates(df):
@@ -102,7 +115,7 @@ def backtest(
         df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None).astype("datetime64[ms]")
         return df
 
-    charizard_df = normalize_dates(charizard_df)
+    pokemon_df = normalize_dates(pokemon_df)
     for t in stock_dfs:
         stock_dfs[t] = normalize_dates(stock_dfs[t])
 
@@ -111,7 +124,7 @@ def backtest(
 
     merged = pd.merge_asof(
         merged,
-        charizard_df.sort_values("date").rename(columns={"price": "charizard_price"}),
+        pokemon_df.sort_values("date").rename(columns={"price": "pokemon_price"}),
         on="date", direction="nearest",
     )
 
@@ -129,26 +142,26 @@ def backtest(
     is_dca = dca is not None and dca > 0
     monthly_contrib = dca if is_dca else 0
 
-    charizard_start = merged.iloc[0]["charizard_price"]
+    pokemon_start = merged.iloc[0]["pokemon_price"]
     stock_starts = {t: merged.iloc[0][f"{t}_price"] for t in ticker_list}
 
     series = []
-    charizard_units = amount / charizard_start if charizard_start > 0 else 0
+    pokemon_units = amount / pokemon_start if pokemon_start > 0 else 0
     stock_units = {t: amount / stock_starts[t] if stock_starts[t] > 0 else 0 for t in ticker_list}
     total_invested = amount
 
     for idx, (_, row) in enumerate(merged.iterrows()):
         if is_dca and idx > 0:
             total_invested += monthly_contrib
-            if row["charizard_price"] > 0:
-                charizard_units += monthly_contrib / row["charizard_price"]
+            if row["pokemon_price"] > 0:
+                pokemon_units += monthly_contrib / row["pokemon_price"]
             for t in ticker_list:
                 if row[f"{t}_price"] > 0:
                     stock_units[t] += monthly_contrib / row[f"{t}_price"]
 
         point = {
             "date": row["date"].strftime("%Y-%m-%d"),
-            "charizard": round(charizard_units * row["charizard_price"], 2),
+            "pokemon": round(pokemon_units * row["pokemon_price"], 2),
         }
         for t in ticker_list:
             point[t] = round(stock_units[t] * row[f"{t}_price"], 2)
@@ -157,12 +170,12 @@ def backtest(
     final = series[-1]
 
     assets = {}
-    charizard_values = [p["charizard"] for p in series]
-    assets["charizard"] = {
-        "label": "Charizard 1st Ed",
-        "final_value": final["charizard"],
-        "return_pct": round((final["charizard"] - total_invested) / total_invested * 100, 2),
-        "metrics": calc_metrics(charizard_values),
+    pokemon_values = [p["pokemon"] for p in series]
+    assets["pokemon"] = {
+        "label": pokemon_name,
+        "final_value": final["pokemon"],
+        "return_pct": round((final["pokemon"] - total_invested) / total_invested * 100, 2),
+        "metrics": calc_metrics(pokemon_values),
     }
 
     for t in ticker_list:
@@ -181,17 +194,19 @@ def backtest(
     inflation_final = inflation_series[-1]
     inflation_assets = {}
     for key, asset in assets.items():
-        col = "charizard" if key == "charizard" else key
+        col = "pokemon" if key == "pokemon" else key
         inf_final = inflation_final[col]
         inflation_assets[key] = {
             "final_value": inf_final,
             "return_pct": round((inf_final - total_invested) / total_invested * 100, 2),
         }
 
-    mc_keys = ["charizard"] + ticker_list
+    mc_keys = ["pokemon"] + ticker_list
     monte_carlo = run_monte_carlo(series, mc_keys)
 
     return {
+        "pokemon": pokemon,
+        "pokemon_name": pokemon_name,
         "tickers": ticker_list,
         "amount": amount,
         "total_invested": total_invested,

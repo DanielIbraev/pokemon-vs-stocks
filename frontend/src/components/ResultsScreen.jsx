@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CharizardWin, CharizardLoss } from './CharizardSvg'
+import { PokemonWin, PokemonLoss, getPokemonColor } from './CharizardSvg'
 import MonteCarloChart from './MonteCarloChart'
 import { sfxVictory, sfxDefeat } from '../sounds'
 
@@ -113,14 +113,15 @@ const cardStyles = {
 }
 
 export default function ResultsScreen({ result, onReplay, onReset }) {
-  const { assets, winner, tickers, amount, total_invested, dca, inflation_assets, monte_carlo } = result
-  const charizardWins = winner === 'charizard'
+  const { assets, winner, tickers, amount, total_invested, dca, inflation_assets, monte_carlo, pokemon, pokemon_name } = result
+  const pokemonWins = winner === 'pokemon'
+  const pokemonColor = getPokemonColor(pokemon)
   const [showContent, setShowContent] = useState(false)
   const [showInflation, setShowInflation] = useState(false)
   const [showMonteCarlo, setShowMonteCarlo] = useState(false)
 
   useEffect(() => {
-    if (charizardWins) sfxVictory()
+    if (pokemonWins) sfxVictory()
     else sfxDefeat()
     const t = setTimeout(() => setShowContent(true), 1200)
     return () => clearTimeout(t)
@@ -131,26 +132,26 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
       <div style={styles.content}>
         {/* Victory / defeat banner */}
         <div style={styles.victoryBox}>
-          {charizardWins ? (
+          {pokemonWins ? (
             <>
               <div style={{ animation: 'victoryBounce 0.6s steps(4) infinite' }}>
-                <CharizardWin size={140} />
+                <PokemonWin pokemon={pokemon} size={140} />
               </div>
-              <div style={styles.victoryText}>
-                ★ CHARIZARD WINS! ★
+              <div style={{ ...styles.victoryText, color: pokemonColor }}>
+                ★ {pokemon_name.toUpperCase()} WINS! ★
               </div>
               <div style={styles.expText}>
-                CHARIZARD gained {Math.round(assets.charizard.return_pct)} EXP. Points!
+                {pokemon_name.toUpperCase()} gained {Math.round(assets.pokemon.return_pct)} EXP. Points!
               </div>
             </>
           ) : (
             <>
-              <CharizardLoss size={100} />
+              <PokemonLoss pokemon={pokemon} size={100} />
               <div style={{ ...styles.victoryText, color: '#4a9eff' }}>
                 {winner} WINS!
               </div>
               <div style={styles.expText}>
-                CHARIZARD fainted!
+                {pokemon_name.toUpperCase()} fainted!
               </div>
             </>
           )}
@@ -189,11 +190,11 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
 
             <div style={styles.cards}>
               <AssetCard
-                asset={assets.charizard}
-                color="#f0a030"
-                isWinner={winner === 'charizard'}
+                asset={assets.pokemon}
+                color={pokemonColor}
+                isWinner={pokemonWins}
                 index={0}
-                inflationData={showInflation ? inflation_assets?.charizard : null}
+                inflationData={showInflation ? inflation_assets?.pokemon : null}
               />
               {tickers.map((t, i) => (
                 <AssetCard
@@ -212,6 +213,7 @@ export default function ResultsScreen({ result, onReplay, onReset }) {
                 <MonteCarloChart
                   monteCarlo={monte_carlo}
                   tickers={tickers}
+                  pokemon={pokemon}
                 />
               </div>
             )}

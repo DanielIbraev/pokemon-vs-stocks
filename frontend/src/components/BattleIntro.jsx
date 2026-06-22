@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CharizardIcon } from './CharizardSvg'
+import { PokemonIcon } from './CharizardSvg'
 import { sfxAppear, sfxAttack } from '../sounds'
 
 const STOCK_COLORS = ['#4a9eff', '#a855f7', '#34d399']
@@ -42,7 +42,7 @@ function HitSparks({ x, y }) {
   )
 }
 
-export default function BattleIntro({ tickers, onDone }) {
+export default function BattleIntro({ tickers, pokemon, pokemonName, onDone }) {
   const [step, setStep] = useState(0)
   const [shake, setShake] = useState(false)
   const [hitFlash, setHitFlash] = useState(false)
@@ -55,15 +55,15 @@ export default function BattleIntro({ tickers, onDone }) {
     const timers = [
       // "Wild X appeared!"
       setTimeout(() => { setStep(1); sfxAppear() }, 400),
-      // "Go! CHARIZARD!" - charizard slides in
+      // "Go! POKEMON!" - pokemon slides in
       setTimeout(() => { setStep(2); sfxAppear() }, 1400),
-      // "CHARIZARD used BACKTEST!" - attack animation
+      // "POKEMON used BACKTEST!" - attack animation
       setTimeout(() => {
         setStep(3)
         setCharizardAttacking(true)
         sfxAttack()
       }, 2400),
-      // Charizard lunges forward
+      // Pokemon lunges forward
       setTimeout(() => {
         setCharizardAttacking(false)
         setHitFlash(true)
@@ -167,13 +167,13 @@ export default function BattleIntro({ tickers, onDone }) {
               transform: charizardAttacking ? 'translateX(80px) translateY(-30px)' : 'none',
               transition: 'transform 0.2s steps(3)',
             }}>
-              <CharizardIcon size={100} />
+              <PokemonIcon pokemon={pokemon} size={100} />
             </div>
           )}
           {step >= 2 && (
             <div style={styles.playerInfo}>
               <div style={{ ...styles.nameTag, borderColor: '#f0a030' }}>
-                CHARIZARD
+                {pokemonName || 'CHARIZARD'}
               </div>
               <div style={styles.hpBar}>
                 <div style={styles.hpLabel}>HP</div>
@@ -191,8 +191,8 @@ export default function BattleIntro({ tickers, onDone }) {
         <span style={styles.text}>
           {step === 0 && '. . .'}
           {step === 1 && `Wild ${tickers.join(', ')} appeared!`}
-          {step === 2 && 'Go! CHARIZARD!'}
-          {step === 3 && 'CHARIZARD used BACKTEST!'}
+          {step === 2 && `Go! ${(pokemonName || 'CHARIZARD').toUpperCase()}!`}
+          {step === 3 && `${(pokemonName || 'CHARIZARD').toUpperCase()} used BACKTEST!`}
           {step >= 4 && "It's super effective!"}
         </span>
         {step >= 3 && (

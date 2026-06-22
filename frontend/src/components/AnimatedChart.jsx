@@ -20,13 +20,13 @@ function smooth(data, keys, windowSize = 5) {
   })
 }
 
-export default function AnimatedChart({ data, tickers, onAnimationEnd }) {
+export default function AnimatedChart({ data, tickers, pokemonName, pokemonColor, onAnimationEnd }) {
   const [visibleCount, setVisibleCount] = useState(1)
   const callbackRef = useRef(onAnimationEnd)
   callbackRef.current = onAnimationEnd
   const calledRef = useRef(false)
 
-  const allKeys = ['charizard', ...tickers]
+  const allKeys = ['pokemon', ...tickers]
   const smoothedData = useRef(smooth(data, allKeys)).current
 
   useEffect(() => {
@@ -76,9 +76,9 @@ export default function AnimatedChart({ data, tickers, onAnimationEnd }) {
       <ResponsiveContainer>
         <AreaChart data={visibleData} margin={{ top: 10, right: 16, left: 8, bottom: 6 }}>
           <defs>
-            <linearGradient id="gradCharizard" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f0a030" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#f0a030" stopOpacity={0} />
+            <linearGradient id="gradPokemon" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={pokemonColor || '#f0a030'} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={pokemonColor || '#f0a030'} stopOpacity={0} />
             </linearGradient>
             {tickers.map((t, i) => (
               <linearGradient key={t} id={`gradStock${i}`} x1="0" y1="0" x2="0" y2="1">
@@ -118,11 +118,11 @@ export default function AnimatedChart({ data, tickers, onAnimationEnd }) {
           />
           <Area
             type="natural"
-            dataKey="charizard"
-            name="CHARIZARD"
-            stroke="#f0a030"
+            dataKey="pokemon"
+            name={pokemonName || 'POKEMON'}
+            stroke={pokemonColor || '#f0a030'}
             strokeWidth={2}
-            fill="url(#gradCharizard)"
+            fill="url(#gradPokemon)"
             isAnimationActive={false}
           />
           {tickers.map((t, i) => (

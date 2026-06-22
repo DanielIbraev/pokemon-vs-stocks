@@ -1,6 +1,14 @@
 import { useState } from 'react'
+import { PokemonIcon } from './CharizardSvg'
+
+const POKEMON_OPTIONS = [
+  { id: 'charizard', name: 'CHARIZARD', color: '#f0a030' },
+  { id: 'venusaur', name: 'VENUSAUR', color: '#48a848' },
+  { id: 'blastoise', name: 'BLASTOISE', color: '#5888c0' },
+]
 
 export default function InputForm({ onSubmit, loading }) {
+  const [pokemon, setPokemon] = useState('charizard')
   const [tickers, setTickers] = useState([''])
   const [amount, setAmount] = useState('1000')
   const [start, setStart] = useState('2005-01-01')
@@ -13,6 +21,7 @@ export default function InputForm({ onSubmit, loading }) {
     const validTickers = tickers.map(t => t.trim().toUpperCase()).filter(Boolean)
     if (!validTickers.length) return
     onSubmit({
+      pokemon,
       tickers: validTickers,
       amount: parseFloat(amount),
       start,
@@ -37,6 +46,30 @@ export default function InputForm({ onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
+      <div style={styles.box}>
+        <label style={styles.label}>CHOOSE YOUR POKEMON</label>
+        <div style={styles.pokemonGrid}>
+          {POKEMON_OPTIONS.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPokemon(p.id)}
+              style={{
+                ...styles.pokemonBtn,
+                borderColor: pokemon === p.id ? p.color : '#333',
+                background: pokemon === p.id ? '#0a0a1f' : '#0a0a14',
+              }}
+            >
+              <PokemonIcon pokemon={p.id} size={50} />
+              <span style={{
+                ...styles.pokemonName,
+                color: pokemon === p.id ? p.color : '#555',
+              }}>{p.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div style={styles.box}>
         <div style={styles.sectionHeader}>
           <label style={styles.label}>OPPONENT</label>
@@ -177,6 +210,27 @@ const styles = {
     padding: '6px 10px',
     cursor: 'pointer',
     flexShrink: 0,
+  },
+  pokemonGrid: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '8px',
+  },
+  pokemonBtn: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '10px 4px',
+    border: '3px solid',
+    cursor: 'pointer',
+    fontFamily: "'Press Start 2P', monospace",
+    transition: 'border-color 0.1s',
+  },
+  pokemonName: {
+    fontSize: '6px',
+    letterSpacing: '0.5px',
   },
   button: {
     padding: '14px',

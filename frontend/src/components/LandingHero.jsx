@@ -1,4 +1,4 @@
-import { CharizardIcon } from './CharizardSvg'
+import { PokemonIcon } from './CharizardSvg'
 
 export default function LandingHero() {
   return (
@@ -12,8 +12,8 @@ export default function LandingHero() {
 
       <div style={styles.battlePreview}>
         <div style={styles.side}>
-          <CharizardIcon size={80} />
-          <div style={styles.label}>CHARIZARD</div>
+          <PokemonIcon pokemon="charizard" size={80} />
+          <div style={styles.label}>POKEMON</div>
         </div>
         <div style={styles.vsBox}>
           <span style={styles.vsText}>VS</span>
