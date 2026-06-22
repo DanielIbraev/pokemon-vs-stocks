@@ -6,7 +6,7 @@ export default function LandingHero() {
       <div style={styles.titleBox}>
         <div style={styles.stars}>* * * * *</div>
         <h1 style={styles.title}>POKEMON</h1>
-        <h2 style={styles.subtitle}>vs THE ECONOMY</h2>
+        <h2 style={styles.subtitle}>vs STOCKS</h2>
         <div style={styles.stars}>* * * * *</div>
       </div>
 
@@ -36,7 +36,7 @@ export default function LandingHero() {
       </div>
 
       <p style={styles.desc}>
-        What if you invested in a 1st Edition Charizard card instead?
+        What if you invested in a 1st Edition Pokemon card instead?
       </p>
 
       <div style={styles.pressStart}>

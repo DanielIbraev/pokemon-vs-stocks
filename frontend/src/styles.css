@@ -168,6 +168,12 @@ body {
   );
 }
 
+/* Pixel avatar bounce */
+@keyframes pixelBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 /* Screen shake */
 @keyframes screenShake {
   0% { transform: translate(0, 0); }
